@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <cctype>
 #include <locale>
+#include <math.h>
 
 // trim from start (in place)
 // https://stackoverflow.com/a/217605/7534030
