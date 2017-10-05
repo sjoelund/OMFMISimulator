@@ -57,12 +57,20 @@ Log::Log() : filename(""), useStdStream(true), initialized(false)
 
 void Log::initialize()
 {
-  numWarnings = 0;
-  numErrors = 0;
-  initialized = true;
+  {
+    std::lock_guard<std::mutex> lock(m);
+    if (initialized) {
+      return;
+    }
 
-  if (!useStdStream)
-    logFile.open(filename.c_str());
+    numWarnings = 0;
+    numErrors = 0;
+    initialized = true;
+
+    if (!useStdStream)
+      logFile.open(filename.c_str());
+  }
+
   Info("Initializing logging (" + std::string(oms_git_version) + ")");
 }
 
@@ -87,13 +95,15 @@ void Log::terminate()
 
   Info("Logging completed properly");
 
+  std::lock_guard<std::mutex> lock(m);
+
   if (!useStdStream)
   {
-    logFile.close();
+    // logFile.close();
     cout << "info:    " << "Logging information has been saved to \"" << filename.c_str() << "\"" << endl;
   }
 
-  initialized = false;
+  // initialized = false;
 }
 
 Log& Log::getInstance()
@@ -108,6 +118,8 @@ void Log::Info(const std::string& msg)
   if (!initialized)
     initialize();
 
+  std::lock_guard<std::mutex> lock(m);
+
   if (useStdStream)
     cout << "info:    " << msg << endl;
   else
@@ -119,6 +131,8 @@ void Log::Debug(const std::string& msg)
   if (!initialized)
     initialize();
 
+  std::lock_guard<std::mutex> lock(m);
+
   if (useStdStream)
     cout << "debug:   " << msg << endl;
   else
@@ -129,6 +143,8 @@ void Log::Warning(const std::string& msg)
 {
   if (!initialized)
     initialize();
+
+  std::lock_guard<std::mutex> lock(m);
 
   numWarnings++;
   if (useStdStream)
@@ -142,6 +158,8 @@ void Log::Error(const std::string& msg)
   if (!initialized)
     initialize();
 
+  std::lock_guard<std::mutex> lock(m);
+
   numErrors++;
   if (useStdStream)
     cerr << "error:   " << msg << endl;
@@ -154,11 +172,16 @@ void Log::Fatal(const std::string& msg)
   if (!initialized)
     initialize();
 
-  numErrors++;
-  if (useStdStream)
-    cerr << "fatal:   " << msg << endl;
-  else
-    logFile << TimeStr() << " | fatal:   " << msg << endl;
+  {
+    std::lock_guard<std::mutex> lock(m);
+
+    numErrors++;
+    if (useStdStream)
+      cerr << "fatal:   " << msg << endl;
+    else
+      logFile << TimeStr() << " | fatal:   " << msg << endl;
+  }
+  // Triggers the mutex again...
   exit(1);
 }
 
@@ -166,6 +189,8 @@ void Log::Trace(const std::string& function, const std::string& file, const long
 {
   if (!initialized)
     initialize();
+
+  std::lock_guard<std::mutex> lock(m);
 
   if (useStdStream)
     cout << "trace:   " << function << " (" << file << ":" << line << ")" << endl;
@@ -175,6 +200,8 @@ void Log::Trace(const std::string& function, const std::string& file, const long
 
 void Log::setLogFile(const std::string& filename)
 {
+  std::lock_guard<std::mutex> lock(m);
+
   if (initialized)
   {
     Error("Log::setLogFile can only be used before the logging is initialized.");

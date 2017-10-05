@@ -63,6 +63,7 @@ public:
   std::string tempDir;
   std::string workingDir;
   std::string logfile;
+  double timeout;
 };
 
 #endif

@@ -49,6 +49,7 @@ ProgramOptions::ProgramOptions()
   useStartTime = false;
   stopTime = 1.0;
   useStopTime = false;
+  timeout = 0;
   tolerance = 1e-6;
   useTolerance = false;
   communicationInterval = 1e-1;
@@ -70,6 +71,7 @@ bool ProgramOptions::load_flags(int argc, char** argv)
   ("resultFile,r", boost::program_options::value<std::string>(&resultFile), "Specifies the name of the output result file")
   ("startTime,s", boost::program_options::value<double>(&startTime), "Specifies the start time.")
   ("stopTime,t", boost::program_options::value<double>(&stopTime), "Specifies the stop time.")
+  ("timeout", boost::program_options::value<double>(&timeout), "Specifies the maximum allowed time in seconds for running a simulation (0 disables).")
   ("tempDir", boost::program_options::value<std::string>(&tempDir), "Specifies the temp directory.")
   ("tolerance", boost::program_options::value<double>(&tolerance), "Specifies the relative tolerance.")
   ("version,v", "Displays version information.")

@@ -30,15 +30,51 @@
  */
 
 #include "Options.h"
+#include "Logging.h"
 
 #include <iostream>
 #include <stdlib.h>
+#include <chrono>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <OMSimulator.h>
 
 extern "C"
 {
   #include <OMSimulatorLua.c>
+}
+
+static int do_simulation(void* pModel, std::chrono::duration<double> timeout)
+{
+  std::mutex m;
+  std::condition_variable cv;
+  int done=0;
+  std::string phase = "Timeout occurred during initialization";
+
+  std::thread t([&m, &cv, &done, &phase, timeout]() // OMSimulator example.xml
+  {
+    std::unique_lock<std::mutex> l(m);
+    if (cv.wait_for(l, timeout) == std::cv_status::timeout) {
+      if (!done && timeout > std::chrono::seconds(0)) {
+        logFatal(phase);
+      }
+    }
+  });
+
+  oms_initialize(pModel);
+  phase = "Timeout occurred during simulation";
+  oms_simulate(pModel);
+  phase = "Timeout occurred during termination";
+  oms_terminate(pModel);
+
+  done=1;
+
+  cv.notify_one();
+  t.join();
+
+  return 0;
 }
 
 int main(int argc, char *argv[])
@@ -105,10 +141,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-      // OMSimulator example.xml
-      oms_initialize(pModel);
-      oms_simulate(pModel);
-      oms_terminate(pModel);
+      return do_simulation(pModel, std::chrono::duration<double>(options.timeout));
     }
 
     oms_unload(pModel);

@@ -34,6 +34,7 @@
 
 #include <string>
 #include <fstream>
+#include <mutex>
 
 //#define OMS_DEBUG_LOGGING
 
@@ -54,7 +55,7 @@ public:
   void Debug(const std::string& msg);
   void Warning(const std::string& msg);
   void Error(const std::string& msg);
-  void Fatal(const std::string& msg);
+  [[noreturn]] void Fatal(const std::string& msg);
   void Trace(const std::string& function, const std::string& file, const long line);
 
   void setLogFile(const std::string& filename);
@@ -70,10 +71,12 @@ private:
   Log(Log const& copy);            // Not Implemented
   Log& operator=(Log const& copy); // Not Implemented
 
+  bool processTerminating;
   bool initialized;
   bool useStdStream;
   std::string filename;
   std::ofstream logFile;
+  std::mutex m;
   unsigned int numWarnings;
   unsigned int numErrors;
 };
