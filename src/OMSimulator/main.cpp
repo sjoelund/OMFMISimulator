@@ -66,13 +66,14 @@ static int do_simulation(void* pModel, std::chrono::duration<double> timeout)
   oms_initialize(pModel);
   phase = "Timeout occurred during simulation";
   oms_simulate(pModel);
-  phase = "Timeout occurred during termination";
-  oms_terminate(pModel);
 
   done=1;
 
   cv.notify_one();
   t.join();
+
+  oms_terminate(pModel);
+  oms_unload(pModel);
 
   return 0;
 }
